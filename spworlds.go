@@ -26,18 +26,18 @@ func NewSP(id, token string) (*SPworlds, error) {
 	return spw, nil
 }
 
-func Auth(id, token string, req *http.Request) {
-	data := fmt.Sprintf("%s:%s", id, token)
+func(s *SPworlds) Auth(req *http.Request) {
+	data := fmt.Sprintf("%s:%s", s.cardId, s.token)
 	encodedData:= base64.StdEncoding.EncodeToString([]byte(data))
 	req.Header.Add("Authorization", "Bearer	"+encodedData)
 }
 
-func (s *SPworlds) getCardBalance() int {
+func getCardBalance(s *SPworlds) int {
 	req, err := http.NewRequest(http.MethodGet, "https://spworlds.ru/api/public/card",nil)
 	if err != nil {
 		log.Fatalf("Неудалось получить баланс! %s", err.Error())
 	}
-	Auth(s.cardId,s.token,req)
+	s.Auth(req)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatalf("Неудалось сделать запрос на сервер! %s", err.Error())
