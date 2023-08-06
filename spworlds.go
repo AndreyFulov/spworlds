@@ -44,6 +44,7 @@ func (s *SPworlds) Auth(req *http.Request) {
 
 	encodedData := base64.StdEncoding.EncodeToString([]byte(data))
 	req.Header.Add("Authorization", "Bearer "+encodedData)
+	fmt.Printf("Data: %s, EncodedData: %s", data, encodedData)
 }
 
 func (s *SPworlds) GetCardBalance() int {
