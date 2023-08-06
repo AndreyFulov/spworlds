@@ -32,7 +32,7 @@ func(s *SPworlds) Auth(req *http.Request) {
 	req.Header.Add("Authorization", "Bearer	"+encodedData)
 }
 
-func getCardBalance(s *SPworlds) int {
+func(s *SPworlds) getCardBalance() int {
 	req, err := http.NewRequest(http.MethodGet, "https://spworlds.ru/api/public/card",nil)
 	if err != nil {
 		log.Fatalf("Неудалось получить баланс! %s", err.Error())
