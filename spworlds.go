@@ -70,7 +70,7 @@ func (s *SPworlds) GetCardBalance() int {
 	return balance.Balance
 }
 
-func (s *SPworlds) MakeTransaction(receiver string, amount int, comment string) {
+func (s *SPworlds) MakeTransaction(receiver string, amount string, comment string) {
 	str := fmt.Sprintf(`{"reciever":"%s","amount":%s, "comment":"%s"}`,receiver,amount,comment)
 	var body = []byte(str)
 	req, err := http.NewRequest(http.MethodPost,"https://spworlds.ru/api/public/transactions", bytes.NewBuffer(body))
