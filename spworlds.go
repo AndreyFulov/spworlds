@@ -2,6 +2,8 @@ package spworlds
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -23,6 +25,12 @@ type ResponseOnPayment struct{
 	Url string `json:"url"`
 }
 
+type PaymentData struct {
+	Payer  string `json:"payer"`
+	Amount int    `json:"amount"`
+	Data   string `json:"data"`
+}
+
 func NewSP(id, token string) (*SPworlds, error) {
 	spw := &SPworlds{
 		cardId: id,
@@ -32,9 +40,10 @@ func NewSP(id, token string) (*SPworlds, error) {
 }
 
 func (s *SPworlds) Auth(req *http.Request) {
-	data := fmt.Sprintf("%s:%s", s.cardId, s.token)
-	encodedData := base64.StdEncoding.EncodeToString([]byte(data))
-	req.Header.Add("Authorization", "Bearer "+encodedData)
+
+	encodedID := base64.StdEncoding.EncodeToString([]byte(s.cardId))
+	encodedToken := base64.StdEncoding.EncodeToString([]byte(s.token))
+	req.Header.Add("Authorization", "Bearer "+encodedID+":"+encodedToken)
 }
 
 func (s *SPworlds) GetCardBalance() int {
@@ -101,4 +110,14 @@ func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string,
 		log.Fatalf("Error decoding JSON response! %s", err.Error())
 	}
 	return response.Url
+}
+
+
+
+
+
+func(s *SPworlds) generateHash(data []byte) string {
+	h := hmac.New(sha256.New, []byte(s.token))
+	h.Write(data)
+	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }
