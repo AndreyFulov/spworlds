@@ -74,6 +74,7 @@ func (s *SPworlds) MakeTransaction(receiver string, amount int, comment string) 
 	str := fmt.Sprintf(`{"reciever":"%s","amount":%s, "comment":"%s"}`,receiver,amount,comment)
 	var body = []byte(str)
 	req, err := http.NewRequest(http.MethodPost,"https://spworlds.ru/api/public/transactions", bytes.NewBuffer(body))
+	fmt.Println(bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	s.Auth(req)
 	res, err := http.DefaultClient.Do(req)
@@ -114,8 +115,48 @@ func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string,
 }
 
 
+func(s *SPworlds) getResponseFromPayment(webhook string, port string) {
+	http.HandleFunc(webhook,s.handleWebhook )
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
 
+func(s *SPworlds) handleWebhook(w http.ResponseWriter, r *http.Request) {
+	// Проверяем, что метод запроса POST
+	if r.Method != http.MethodPost {
+		http.Error(w, "Метод не поддерживается", http.StatusMethodNotAllowed)
+		return
+	}
 
+	// Читаем тело запроса
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Ошибка чтения тела запроса", http.StatusInternalServerError)
+		return
+	}
+
+	// Получаем значение хеша из хедера X-Body-Hash
+	receivedHash := r.Header.Get("X-Body-Hash")
+
+	// Генерируем хеш для тела запроса
+	computedHash := s.generateHash(body)
+
+	// Сравниваем полученный хеш с вычисленным хешем
+	if receivedHash != computedHash {
+		http.Error(w, "Хеш не совпадает", http.StatusUnauthorized)
+		return
+	}// Парсим тело запроса в структуру PaymentData
+	var paymentData PaymentData
+	err = json.Unmarshal(body, &paymentData)
+	if err != nil {
+		http.Error(w, "Ошибка при декодировании JSON", http.StatusBadRequest)
+		return
+	}
+
+	// Здесь можно обрабатывать данные из запроса, например, сохранить информацию о платеже и т.д.
+
+	// Отправляем успешный ответ
+	fmt.Fprint(w, "Успешный запрос")
+}
 
 func(s *SPworlds) generateHash(data []byte) string {
 	h := hmac.New(sha256.New, []byte(s.token))
