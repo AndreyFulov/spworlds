@@ -8,15 +8,15 @@ import (
 	"log"
 	"net/http"
 )
+type Balance struct {
+	Balance int `json:"balance"`
+}
 
 type SPworlds struct {
 	cardId string
 	token  string
 }
 
-type Balance struct {
-	Balance int `json:"balance"`
-}
 
 func NewSP(id, token string) (*SPworlds, error) {
 	spw := &SPworlds{
