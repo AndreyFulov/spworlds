@@ -1,4 +1,4 @@
-package sp
+package main
 
 import (
 	"encoding/base64"
