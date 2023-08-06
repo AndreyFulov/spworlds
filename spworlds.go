@@ -69,24 +69,37 @@ func (s *SPworlds) GetCardBalance() int {
 	}
 	return balance.Balance
 }
+func (s *SPworlds) MakeTransaction(receiver string, amount int, comment string) {
+	data := map[string]interface{}{
+		"receiver": receiver,
+		"amount":   amount,
+		"comment":  comment,
+	}
 
-func (s *SPworlds) MakeTransaction(receiver string, amount string, comment string) {
-	str := fmt.Sprintf(`{"reciever":"%s","amount":%s, "comment":"%s"}`,receiver,amount,comment)
-	var body = []byte(str)
-	req, err := http.NewRequest(http.MethodPost,"https://spworlds.ru/api/public/transactions", bytes.NewBuffer(body))
-	fmt.Println(bytes.NewBuffer(body))
+	body, err := json.Marshal(data)
+	if err != nil {
+		log.Fatalf("Error encoding JSON! %s", err.Error())
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "https://spworlds.ru/api/public/transactions", bytes.NewBuffer(body))
+	if err != nil {
+		log.Fatalf("Failed to create request! %s", err.Error())
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	s.Auth(req)
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Fatalf("Failed to make request to the server! %s", err.Error())
 	}
+
 	resBody, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Fatalf("Error reading response body! %s", err.Error())
 	}
+
 	fmt.Printf("Успешная транзакция! %s", resBody)
-	
 }
 
 func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string, data string) string {
