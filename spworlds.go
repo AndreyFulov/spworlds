@@ -40,10 +40,10 @@ func NewSP(id, token string) (*SPworlds, error) {
 }
 
 func (s *SPworlds) Auth(req *http.Request) {
+	data := fmt.Sprintf("%s:%s", s.cardId, s.token)
 
-	encodedID := base64.StdEncoding.EncodeToString([]byte(s.cardId))
-	encodedToken := base64.StdEncoding.EncodeToString([]byte(s.token))
-	req.Header.Add("Authorization", "Bearer "+encodedID+":"+encodedToken)
+	encodedData := base64.StdEncoding.EncodeToString([]byte(data))
+	req.Header.Add("Authorization", "Bearer "+encodedData)
 }
 
 func (s *SPworlds) GetCardBalance() int {
