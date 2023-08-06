@@ -1,3 +1,3 @@
-module github.com/AndreyFulov/spworlds
+module spworlds
 
 go 1.20
