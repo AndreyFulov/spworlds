@@ -102,7 +102,7 @@ func (s *SPworlds) MakeTransaction(receiver string, amount int, comment string) 
 	fmt.Printf("Успешная транзакция! %s", resBody)
 }
 
-func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string, data string) string {
+func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string, data string, port string) PaymentData {
 	str := fmt.Sprintf(`{"amount":%s,"redirectUrl":"%s", "webhookUrl":"%s", "data":"%s"}`,amount,redirect,webhook, data)
 	var body = []byte(str)
 	req, err := http.NewRequest(http.MethodPost,"https://spworlds.ru/api/public/payment", bytes.NewBuffer(body))
@@ -124,15 +124,19 @@ func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string,
 	if err != nil {
 		log.Fatalf("Error decoding JSON response! %s", err.Error())
 	}
-	return response.Url
+	s.getResponseFromPayment(webhook,port)
+	return payData
 }
 
 //Ожидает ответа от сервера
 func(s *SPworlds) getResponseFromPayment(webhook string, port string) {
 	http.HandleFunc(webhook,s.handleWebhook )
 	log.Fatal(http.ListenAndServe(":"+port, nil))
+	if payData.Payer != "" {
+		return
+	}
 }
-
+var payData PaymentData
 func(s *SPworlds) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// Проверяем, что метод запроса POST
 	if r.Method != http.MethodPost {
@@ -170,6 +174,9 @@ func(s *SPworlds) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// Отправляем успешный ответ
 	fmt.Fprint(w, "Успешный запрос")
 }
+
+
+
 
 func(s *SPworlds) generateHash(data []byte) string {
 	h := hmac.New(sha256.New, []byte(s.token))
