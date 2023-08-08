@@ -127,7 +127,7 @@ func (s *SPworlds) CreateRequestToPay(amount int,redirect string,webhook string,
 	return response.Url
 }
 
-
+//Ожидает ответа от сервера
 func(s *SPworlds) getResponseFromPayment(webhook string, port string) {
 	http.HandleFunc(webhook,s.handleWebhook )
 	log.Fatal(http.ListenAndServe(":"+port, nil))
@@ -166,7 +166,7 @@ func(s *SPworlds) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Здесь можно обрабатывать данные из запроса, например, сохранить информацию о платеже и т.д.
-
+	w.Write([]byte(body))
 	// Отправляем успешный ответ
 	fmt.Fprint(w, "Успешный запрос")
 }
