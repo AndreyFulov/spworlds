@@ -10,6 +10,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"golang.org/x/oauth2"
 )
 
 type SPworlds struct {
@@ -176,6 +178,108 @@ func(s *SPworlds) handleWebhook(w http.ResponseWriter, r *http.Request) {
 }
 
 
+
+
+var (
+    discordOAuthConfig = &oauth2.Config{
+        ClientID:     "YOUR_CLIENT_ID",
+        ClientSecret: "YOUR_CLIENT_SECRET",
+        RedirectURL:  "YOUR_REDIRECT_URL",
+        Scopes:       []string{"identify"},
+        Endpoint: oauth2.Endpoint{
+            AuthURL:  "https://discord.com/api/oauth2/authorize",
+            TokenURL: "https://discord.com/api/oauth2/token",
+        },
+	}
+)
+
+type DiscordUser struct {
+    ID       string `json:"id"`
+    Username string `json:"username"`
+}
+var spUsername string
+func(s *SPworlds) AuthWithDiscord(clientId string, clientSecret string, redirectUrl string) string {
+	discordOAuthConfig.ClientID = clientId
+	discordOAuthConfig.ClientSecret = clientSecret
+	discordOAuthConfig.RedirectURL = redirectUrl
+	spUsername = ""
+    http.HandleFunc("/dsauth/", handleAuth)
+    http.HandleFunc("/dsauth/callback", handleCallback)
+    http.HandleFunc("/dsauth/discord-event", handleDiscordEvent)
+    http.ListenAndServe(":8080", nil)
+	if spUsername != ""  {
+		return spUsername
+	}
+	return ""
+}
+func handleAuth(w http.ResponseWriter, r *http.Request) {
+    url := discordOAuthConfig.AuthCodeURL("", oauth2.AccessTypeOffline)
+    http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+var userToken oauth2.Token
+func handleCallback(w http.ResponseWriter, r *http.Request) {
+    code := r.URL.Query().Get("code")
+    token, err := discordOAuthConfig.Exchange(r.Context(), code)
+    if err != nil {
+        http.Error(w, "Failed to exchange token", http.StatusInternalServerError)
+        return
+    }
+	userToken = *token
+    // Store or use the token as needed
+
+    http.Redirect(w, r, "/discord-event", http.StatusTemporaryRedirect)
+}
+
+func handleDiscordEvent(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodPost {
+        http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+        return
+    }
+
+    // Authenticate the request from Discord if needed
+
+    var event struct {
+        // Define your event structure here based on Discord's payload
+        // For example:
+        // Type     string `json:"type"`
+        UserID   string `json:"user_id"`
+        // ...
+
+        // You should customize this based on the actual payload
+    }
+
+    if err := json.NewDecoder(r.Body).Decode(&event); err != nil {
+        http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+        return
+    }
+
+    // Process the event
+    // For example, if you're interested in the user's Discord ID:
+    discordID := event.UserID
+
+    // Make a request to get the username using the discordID
+    usernameResp, err := http.Get(fmt.Sprintf("https://spworlds.ru/api/public/users/%s", discordID))
+    if err != nil {
+        http.Error(w, "Failed to get username", http.StatusInternalServerError)
+        return
+    }
+    defer usernameResp.Body.Close()
+
+    var usernameResponse struct {
+        Username string `json:"username"`
+    }
+
+    if err := json.NewDecoder(usernameResp.Body).Decode(&usernameResponse); err != nil {
+        http.Error(w, "Failed to decode username JSON", http.StatusInternalServerError)
+        return
+    }
+
+    // Now you have the username
+    username := usernameResponse.Username
+	spUsername = username
+
+    fmt.Fprintf(w, "Discord ID: %s\nUsername: %s", discordID, username)
+}
 
 
 func(s *SPworlds) generateHash(data []byte) string {
